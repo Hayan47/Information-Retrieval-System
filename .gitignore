@@ -1,0 +1,20 @@
+# Virtual Environment
+env/
+
+# IDE/Editor Files
+.idea/
+
+# Compiled Python Files
+*.pyc
+__pycache__/
+
+# Logs and Temporary Files
+*.log
+tmp/
+
+# Generated or Computed Data
+inverted_index
+inverted_index1
+
+# Static Files
+IR/static
