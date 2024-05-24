@@ -9,6 +9,12 @@
       <input type="text" id="dataset_name" name="dataset_name" required>
       <input type="submit" name="process data" value="{% trans 'process data' %}">
     </form>
+    <form method="post" action="{% url 'evaluate system' %}">
+      {% csrf_token %}
+      <label for="dataset_name">Dataset Name:</label>
+      <input type="text" id="dataset_name" name="dataset_name" required>
+      <input type="submit" name="evaluate system" value="{% trans 'evaluate system' %}">
+    </form>
   </li>
   {{ block.super }}
 {% endblock %}

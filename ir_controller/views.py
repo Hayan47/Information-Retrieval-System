@@ -84,15 +84,9 @@ def evaluate_system(request):
     dataset_name = request.data.get('dataset_name')
     if dataset_name:
         queries_path = os.path.join(settings.BASE_DIR, 'IR', 'static', 'datasets', f'{dataset_name}_queries.csv')
-        # qrels_df = pd.read_csv(queries_path, names=['query_id', 'doc_id', 'relevance_score'])
-        # qrels = qrels_df.set_index(['query_id', 'doc_id'])['relevance_score'].to_dict()
-        # qrels = {k: dict(v) for k, v in qrels.groupby(level=0)}
-        # print(qrels)
         queries_df = pd.read_csv(queries_path, names=['query_id', 'query_text'])
         queries = [tuple(x) for x in queries_df.values]
-        # processed_queries = []
-        matched_documents = []
-
+        matched_documents = {}
         try:
             inverted_index = read_inverted_index('inverted_index')
         except inverted_index.DoesNotExist:
@@ -100,26 +94,29 @@ def evaluate_system(request):
         
 
         query_processing_endpoint = f'http://localhost:8000/api/v1/queryprocessing/queryprocessing/'
-        for query_id, query_text in queries[:5]:
+        for query_id, query_text in queries[:3]:
             query_processing_response = requests.post(query_processing_endpoint, json={'query': query_text})
             if query_processing_response.status_code == 200:
                 print(f"Query '{query_text}' (ID: {query_id}) processed successfully.")
-                # processed_queries.append(query_processing_response)
 
                 query_terms = query_processing_response.json()
-                matching_and_ranking_endpoint = f'http://localhost:8000/api/v1/matching_and_ranking/matching_and_ranking/'
+                matching_and_ranking_endpoint = f'http://localhost:8000/api/v1/matching_and_ranking/matching_and_ranking_for_evaluation/'
                 matching_and_ranking_response = requests.post(matching_and_ranking_endpoint, json={'query_terms': query_terms,'inverted_index': inverted_index})
 
                 if matching_and_ranking_response.status_code == 200:
-                    matched_documents.append(matching_and_ranking_response)
+                    matched_documents[query_id] = matching_and_ranking_response.json()
                 else:
                     return Response({'error': 'Missing query terms in request data'}, status=400)
 
             else:
                 return Response({'error': 'Missing query in request data'}, status=400)
-
-        return Response(matching_and_ranking_response.json())
-
+            
+        evaluation_endpoint = f'http://localhost:8000/api/v1/evaluation/evaluating/'
+        evaluation_response = requests.post(evaluation_endpoint, json={'system_results': matched_documents, 'dataset_name': dataset_name })
+        if evaluation_response.status_code == 200:
+            return Response(evaluation_response.json())
+        else:
+            return Response({'error': 'Missing system results in request data'}, status=400)
     
     return Response({'error': 'Invalid request method (use POST)'}, status=400)
 

@@ -11,8 +11,6 @@ def matchingAndRanking(request):
     inverted_index = request.data.get('inverted_index')
     matching_and_ranking = MatchingAndRanking()
     docs_list = matching_and_ranking.match_and_rank_documents(query_terms, inverted_index)
-    print(len(docs_list))
-    print(docs_list)
     documents = []
     for doc_id, score in docs_list.items():
         try:
@@ -24,3 +22,11 @@ def matchingAndRanking(request):
     serializer = DocumentSerializer(documents, many=True)
     return Response(serializer.data)
 
+@api_view(['POST'])
+def matchingAndRankingForEvaluation(request):
+    query_terms = request.data.get('query_terms')
+    inverted_index = request.data.get('inverted_index')
+    matching_and_ranking = MatchingAndRanking()
+    docs_list = matching_and_ranking.match_and_rank_documents(query_terms, inverted_index)
+   
+    return Response(docs_list)

@@ -14,4 +14,5 @@ urlpatterns = [
     path('', include('ui.urls')),
     path("__reload__/", include("django_browser_reload.urls")),
     path('api/v1/admin_tools/', include('admin_tools.urls')),
+    path('api/v1/evaluation/', include('evaluation.urls')),
 ]
