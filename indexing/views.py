@@ -7,12 +7,10 @@ from .indexing import Indexing
 @api_view(['POST'])
 def indexing(request):
     if request.method == 'POST':
-        vsm = request.data.get('vsm')
-        doc_ids =request.data.get('doc_ids')
+        dataset_name = request.data.get('dataset_name')
         indexing = Indexing()
-        # Build inverted index from preprocessed documents
-        inverted_index = indexing.build_inverted_index(vsm, doc_ids)
-
-        return Response(inverted_index)
+        doc_vectors = indexing.read_doc_vectors(f'{dataset_name}_doc_vectors')
+        inverted_index = indexing.build_inverted_index(doc_vectors, dataset_name)
+        return Response({'inverted_index': inverted_index})
     else:
-        return Response({'error': 'Missing vsm'}, status=400)
+        return Response({'error': 'Missing dataset_name'}, status=400)

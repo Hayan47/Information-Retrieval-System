@@ -18,3 +18,7 @@ inverted_index1
 
 # Static Files
 IR/static
+
+*
+!manage.py
+.gitignore

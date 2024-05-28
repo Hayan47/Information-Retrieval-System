@@ -27,7 +27,14 @@ class Evaluation:
             qrels[query_id][doc_id] = relevance_score
 
         evaluator = pytrec_eval.RelevanceEvaluator(qrels, {'map', 'recall', 'P_10', 'recip_rank'})
-        eval_metrics = evaluator.evaluate(system_results)
+
+        results_dict = {}
+        for query_id, results_list in system_results.items():
+            if results_list:
+                results_dict[query_id] = {doc_id: float(score) for doc_id, score in results_list}
+
+        
+        eval_metrics = evaluator.evaluate(results_dict)
         overall_metrics = self.calculate_overall_metrics(eval_metrics)
         return overall_metrics
 
@@ -37,7 +44,6 @@ class Evaluation:
 
         for query_id, query_result in eval_metrics.items():
             query_metrics.append(query_result)
-            print(query_result)
 
         # Calculate Mean Average Precision (MAP)
         map_scores = [metrics.get('map', 0) for metrics in query_metrics]

@@ -9,6 +9,9 @@ from nltk.stem import WordNetLemmatizer
 import re
 from spellchecker import SpellChecker
 from nltk.tokenize import word_tokenize
+import unicodedata
+import contractions
+import inflect
 
 
 class TextProcessing:
@@ -21,6 +24,8 @@ class TextProcessing:
         self.wordnet_map = {'N': wordnet.NOUN, 'V': wordnet.VERB, 'J': wordnet.ADJ, 'R': wordnet.ADV}
         self.url_pattern = r'(http[s]?://\S+|www\.\S+)'
         self.spell_checker = SpellChecker()
+        self.p = inflect.engine()
+
 
         
 
@@ -110,10 +115,39 @@ class TextProcessing:
         return filtered_tokens
 
 
+
+    def normalize_text(self, text):
+        normalized_text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore')
+        return normalized_text
+    
+
+    def expand_contractions(self, text):
+        expanded_text = contractions.fix(text)
+        return expanded_text
+
+
+    def replace_numbers_with_words(self, text):
+        words = text.split()
+        processed_words = []
+        for word in words:
+            if word.isdigit():
+                if len(word) < 10:
+                    processed_words.append(self.p.number_to_words(word))
+                else:
+                    # Skip adding the word to the list, effectively removing it
+                    continue
+            else:
+                processed_words.append(word)
+        return ' '.join(processed_words)
+
+
     def preprocess_text(self, text):
         text = text.lower()
         
         text = self.remove_punctuations(text)
+        text = self.normalize_text(text)
+        text = self.expand_contractions(text)
+        text = self.replace_numbers_with_words(text)
         
         #tokenizing
         tokens = word_tokenize(text)
@@ -127,10 +161,10 @@ class TextProcessing:
         tokens = self.remove_html_tags(tokens)
 
         # stemming
-        tokens = self.stem_text(tokens)
+        # tokens = self.stem_text(tokens)
         
         # lemmatization
-        # tokens = self.lemmatize_text(tokens)
+        tokens = self.lemmatize_text(tokens)
         
         # Spell checking and correction
         # tokens = self.correct_spelling(tokens)

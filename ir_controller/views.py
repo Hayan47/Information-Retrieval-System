@@ -6,6 +6,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 import os
 import pandas as pd
 from django.conf import settings
+from gensim.models import Word2Vec
+import gzip
 
 
 @staff_member_required
@@ -13,26 +15,23 @@ from django.conf import settings
 def process_data(request):
     dataset_name = request.data.get('dataset_name')
     if dataset_name:
-        # Call the preprocessing service
+        print("Preprocessing")
         preprocess_endpoint = f'http://localhost:8000/api/v1/preprocessing/preprocess/'
         preprocess_response = requests.post(preprocess_endpoint, {'dataset_name': dataset_name})
 
         if preprocess_response.status_code == 200:
             preprocessed_data = preprocess_response.json()
-            # print(preprocess_response.json())
-            # Call the data representation service
+            print("Representing")
             represent_endpoint = 'http://localhost:8000/api/v1/representation/represent/'
-            represent_response = requests.post(represent_endpoint, json={'preprocessed_data': preprocessed_data})
-            if represent_response.status_code == 200:
-                vsm = represent_response.json()['vector_space_model']
-                doc_ids = represent_response.json()['doc_ids']
+            represent_response = requests.post(represent_endpoint, json={'preprocessed_data': preprocessed_data, 'dataset_name': dataset_name})
+            if represent_response.status_code == 200:   
+                print("Indexing")
                 index_endpoint = 'http://localhost:8000/api/v1/indexing/indexing/'
-                indexing_response = requests.post(index_endpoint, json={'vsm': vsm ,'doc_ids':doc_ids})
-            
+                indexing_response = requests.post(index_endpoint, json={'dataset_name': dataset_name})
                 if indexing_response.status_code == 200:
-                    inverted_index = indexing_response.json()
-                    write_inverted_index(inverted_index, 'inverted_index')
-                    return Response({'success': True, 'index': indexing_response.json()})
+                    inverted_index = indexing_response.json()['inverted_index']
+                    save_inverted_index_chunked(inverted_index, 50,  f'{dataset_name}_inverted_index')
+                    return Response({'success': True, 'index': inverted_index})
                 else:
                     return Response({'error': 'Error occurred indexing'}, status=represent_response.status_code)
             else:
@@ -46,20 +45,21 @@ def process_data(request):
 @api_view(['POST'])
 def search(request):
     query = request.data.get('query')
+    dataset_name = request.data.get('dataset_name')
     if query:
-        # Retrieve the inverted index from storage
         try:
-            inverted_index = read_inverted_index('inverted_index')
+            print("Reading Index")
+            inverted_index = load_inverted_index_chunked(f'{dataset_name}_inverted_index')
         except inverted_index.DoesNotExist:
             return Response({'error': 'Inverted index not found'}, status=404)
-        
+        print("Processing Query")
         query_processing_endpoint = f'http://localhost:8000/api/v1/queryprocessing/queryprocessing/'
         query_processing_response = requests.post(query_processing_endpoint, json={'query': query})
         if query_processing_response.status_code == 200:
             query_terms = query_processing_response.json()
             matching_and_ranking_endpoint = f'http://localhost:8000/api/v1/matching_and_ranking/matching_and_ranking/'
-            matching_and_ranking_response = requests.post(matching_and_ranking_endpoint, json={'query_terms': query_terms,'inverted_index': inverted_index})
-
+            matching_and_ranking_response = requests.post(matching_and_ranking_endpoint, json={'query_terms': query_terms,'inverted_index': inverted_index, 'dataset_name': dataset_name})
+            print("Matching Query and Ranking Results")
             if matching_and_ranking_response.status_code == 200:
                 return Response(matching_and_ranking_response.json())
             else:
@@ -68,15 +68,6 @@ def search(request):
             return Response({'error': 'Missing query in request data'}, status=400)
 
     return Response({'error': 'Invalid request method (use POST)'}, status=400)
-
-def write_inverted_index(inverted_index, filename):
-   with open(filename, 'wb') as file:
-        pickle.dump(inverted_index, file)
-
-def read_inverted_index(filename):
-    with open(filename, 'rb') as file:
-        inverted_index = pickle.load(file)
-    return inverted_index
 
 
 @api_view(['POST'])
@@ -88,29 +79,26 @@ def evaluate_system(request):
         queries = [tuple(x) for x in queries_df.values]
         matched_documents = {}
         try:
-            inverted_index = read_inverted_index('inverted_index')
+            print("Reading Index")
+            inverted_index = load_inverted_index_chunked(f'{dataset_name}_inverted_index')
         except inverted_index.DoesNotExist:
             return Response({'error': 'Inverted index not found'}, status=404)
-        
-
         query_processing_endpoint = f'http://localhost:8000/api/v1/queryprocessing/queryprocessing/'
-        for query_id, query_text in queries[:3]:
+        for query_id, query_text in queries[:1]:
             query_processing_response = requests.post(query_processing_endpoint, json={'query': query_text})
             if query_processing_response.status_code == 200:
                 print(f"Query '{query_text}' (ID: {query_id}) processed successfully.")
-
                 query_terms = query_processing_response.json()
                 matching_and_ranking_endpoint = f'http://localhost:8000/api/v1/matching_and_ranking/matching_and_ranking_for_evaluation/'
-                matching_and_ranking_response = requests.post(matching_and_ranking_endpoint, json={'query_terms': query_terms,'inverted_index': inverted_index})
-
+                matching_and_ranking_response = requests.post(matching_and_ranking_endpoint, json={'query_terms': query_terms,'inverted_index': inverted_index, 'dataset_name': dataset_name})
                 if matching_and_ranking_response.status_code == 200:
                     matched_documents[query_id] = matching_and_ranking_response.json()
                 else:
                     return Response({'error': 'Missing query terms in request data'}, status=400)
-
             else:
                 return Response({'error': 'Missing query in request data'}, status=400)
-            
+        
+        print("Evaluating")
         evaluation_endpoint = f'http://localhost:8000/api/v1/evaluation/evaluating/'
         evaluation_response = requests.post(evaluation_endpoint, json={'system_results': matched_documents, 'dataset_name': dataset_name })
         if evaluation_response.status_code == 200:
@@ -119,8 +107,27 @@ def evaluate_system(request):
             return Response({'error': 'Missing system results in request data'}, status=400)
     
     return Response({'error': 'Invalid request method (use POST)'}, status=400)
-
     
     
 
+def split_dict(dictionary, chunk_size):
+    """Split a dictionary into chunks of specified size."""
+    it = iter(dictionary.items())
+    for i in range(0, len(dictionary), chunk_size):
+        yield {k: v for k, v in zip(range(chunk_size), it)}
 
+def save_inverted_index_chunked(inverted_index, chunk_size, file_prefix):
+    chunks = split_dict(inverted_index, chunk_size)
+    for i, chunk in enumerate(chunks):
+        with gzip.open(f'{file_prefix}_{i}.pkl.gz', 'wb') as file:
+            pickle.dump(chunk, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+def load_inverted_index_chunked(file_prefix):
+    inverted_index = {}
+    i = 0
+    while os.path.exists(f'{file_prefix}_{i}.pkl.gz'):
+        with gzip.open(f'{file_prefix}_{i}.pkl.gz', 'rb') as file:
+            chunk = pickle.load(file)
+            inverted_index.update(chunk)
+        i += 1
+    return inverted_index

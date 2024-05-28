@@ -1,5 +1,5 @@
 from preprocessing.text_processing import TextProcessing
-
+import numpy as np
 
 class QueryProcessing:
 

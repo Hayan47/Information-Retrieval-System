@@ -7,6 +7,7 @@ def load_dataset(dataset_name):
     dataset_path = os.path.join(settings.BASE_DIR, 'IR', 'static', 'datasets', f'{dataset_name}.tsv')
     df = pd.read_csv(dataset_path, sep='\t', header=None, names=['doc_id', 'text'])
     df['text'] = df['text'].fillna('')
+    # df = df.head()
     # store_dataset(df)
     return df
 
