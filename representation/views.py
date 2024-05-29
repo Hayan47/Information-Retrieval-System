@@ -13,6 +13,7 @@ def represent_data(request):
         documents = preprocessed_data['text'].values()        
         dataRepresentation = DataRepresentation(documents=documents)
         dataRepresentation.saveModel(dataset_name)
+        dataRepresentation.saveBM25(dataset_name)
         df = pd.DataFrame.from_dict(preprocessed_data)
         doc_vectors = [(row['doc_id'], dataRepresentation.compute_document_vector(row['text'])) for _, row in df.iterrows()]
         dataRepresentation.write_doc_vectors(filename = f'{dataset_name}_doc_vectors', doc_vectors = doc_vectors)

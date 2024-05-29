@@ -8,10 +8,11 @@ from admin_tools.serializers import DocumentSerializer
 @api_view(['POST'])
 def matchingAndRanking(request):
     query_terms = request.data.get('query_terms')
-    inverted_index = request.data.get('inverted_index')
+    # inverted_index = request.data.get('inverted_index')
     dataset_name = request.data.get('dataset_name')
     matching_and_ranking = MatchingAndRanking(dataset_name=dataset_name)
-    docs_list = matching_and_ranking.match_and_rank_documents(query_terms, inverted_index)
+    docs_list = matching_and_ranking.match_and_rank_documents(query_terms)
+    print(docs_list)
     documents = []
     for doc_id, score in docs_list:
         try:
@@ -28,6 +29,6 @@ def matchingAndRankingForEvaluation(request):
     inverted_index = request.data.get('inverted_index')
     dataset_name = request.data.get('dataset_name')
     matching_and_ranking = MatchingAndRanking(dataset_name=dataset_name)
-    docs_list = matching_and_ranking.match_and_rank_documents(query_terms, inverted_index)
+    docs_list = matching_and_ranking.match_and_rank_documents(query_terms)
    
     return Response(docs_list)
