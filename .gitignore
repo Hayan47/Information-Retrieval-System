@@ -1,3 +1,4 @@
+
 # Virtual Environment
 env/
 
@@ -12,13 +13,8 @@ __pycache__/
 *.log
 tmp/
 
-# Generated or Computed Data
-inverted_index
-inverted_index1
+
 
 # Static Files
 IR/static
 
-*
-!manage.py
-.gitignore

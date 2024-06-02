@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'django_browser_reload',
     'admin_tools',
     'evaluation',
+    'topic_modeling',
+    'clustring',
 ]
 
 MIDDLEWARE = [

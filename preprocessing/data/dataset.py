@@ -8,7 +8,7 @@ def load_dataset(dataset_name):
     df = pd.read_csv(dataset_path, sep='\t', header=None, names=['doc_id', 'text'])
     df['text'] = df['text'].fillna('')
     # df = df.head()
-    store_dataset(df, dataset_name)
+    # store_dataset(df, dataset_name)
     return df
 
 def store_dataset(df, dataset_name):

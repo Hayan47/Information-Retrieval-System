@@ -18,21 +18,35 @@ def process_data(request):
         print("Preprocessing")
         preprocess_endpoint = f'http://localhost:8000/api/v1/preprocessing/preprocess/'
         preprocess_response = requests.post(preprocess_endpoint, {'dataset_name': dataset_name})
-
         if preprocess_response.status_code == 200:
             preprocessed_data = preprocess_response.json()
             print("Representing")
             represent_endpoint = 'http://localhost:8000/api/v1/representation/represent/'
             represent_response = requests.post(represent_endpoint, json={'preprocessed_data': preprocessed_data, 'dataset_name': dataset_name})
-            if represent_response.status_code == 200: 
-                return Response({'success': True})
+            if represent_response.status_code == 200:
+                trigrams = represent_response.json()['trigrams']
+                print("topic_modeling")
+                topic_modeling_endpoint = 'http://localhost:8000/api/v1/topic_modeling/topic_modeling/'
+                topic_modeling_response = requests.post(topic_modeling_endpoint, json={'trigrams': trigrams, 'dataset_name': dataset_name})
+                if topic_modeling_response.status_code == 200:
+                    corpus = topic_modeling_response.json()['corpus']
+                    print("clustring")
+                    clustring_endpoint = 'http://localhost:8000/api/v1/clustring/clustring/'
+                    clustring_response = requests.post(clustring_endpoint, json={'corpus': corpus, 'dataset_name': dataset_name})
+                    if clustring_response.status_code == 200:
+                        
+                        return Response({'success': True})
+                    else:
+                        return Response({'error': 'Error occurred during clustring '}, status=clustring_response.status_code)
+                else:
+                    return Response({'error': 'Error occurred during topic modeling '}, status=topic_modeling_response.status_code)
             else:
                 return Response({'error': 'Error occurred during data representation'}, status=represent_response.status_code)
         else:
             return Response({'error': 'Error occurred during preprocessing'}, status=preprocess_response.status_code)
     else:
         return Response({'error': 'Missing text data'}, status=400)
-    
+   
 
 @api_view(['POST'])
 def search(request):

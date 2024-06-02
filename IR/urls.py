@@ -17,6 +17,8 @@ urlpatterns = [
     path("__reload__/", include("django_browser_reload.urls")),
     path('api/v1/admin_tools/', include('admin_tools.urls')),
     path('api/v1/evaluation/', include('evaluation.urls')),
-    
+    path('api/v1/topic_modeling/', include('topic_modeling.urls')),
+    path('api/v1/clustring/', include('clustring.urls')),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

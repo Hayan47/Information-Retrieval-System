@@ -6,12 +6,17 @@ import pickle
 from gensim.models import Word2Vec
 from spellchecker import SpellChecker
 from sklearn.preprocessing import MinMaxScaler
+from gensim.corpora import Dictionary
+from gensim.models import LdaModel
 
 class MatchingAndRanking:
     def __init__(self, dataset_name):
         self.model = Word2Vec.load(f"{dataset_name}_word2vec.model")
         self.doc_vectors = self.read_doc_vectors(f"{dataset_name}_doc_vectors")
         self.bm25 = self.read_bm25(dataset_name)
+        self.dictionary = self.loadDictionary(dataset_name=dataset_name)
+        self.lda_model = self.loadLdaModel(dataset_name=dataset_name)
+        self.topics_list = self.loadTopicList(dataset_name=dataset_name)
         self.similarity_threshold=0.7
         self.spell = SpellChecker()
         self.bm25_weight=1
@@ -26,8 +31,8 @@ class MatchingAndRanking:
     def get_bm25_scores(self, query_terms):
         return self.bm25.get_scores(query_terms)
 
-    def match_and_rank_documents(self, query_terms, k=100):
-        
+    def match_and_rank_documents(self, query_terms, k=200):
+        query_topics = self.get_query_topic(query_terms)
         query_vector = self.get_query_vector(query_terms)
         
         #check if vector is non for out of vocabulary word:
@@ -46,12 +51,12 @@ class MatchingAndRanking:
             query_vector = default_vector
 
         bm25_scores = self.get_bm25_scores(query_terms)
-        # Normalize BM25 scores
         normalized_bm25_scores = self.normalize_scores(bm25_scores)
 
         # Get the top-k documents based on BM25 scores
         top_k_indices = np.argsort(normalized_bm25_scores)[::-1][:k]
-        top_k_docs = [(self.doc_vectors[i][0], normalized_bm25_scores[i]) for i in top_k_indices]
+        filtered_indices = [idx for idx in top_k_indices if any(topic in query_topics for topic in self.topics_list[idx])]
+        top_k_docs = [(self.doc_vectors[i][0], normalized_bm25_scores[i]) for i in filtered_indices]
 
         if not top_k_docs:
             return []
@@ -62,7 +67,6 @@ class MatchingAndRanking:
 
         # Compute cosine similarities between the query vector and the document vectors
         similarities = cosine_similarity([query_vector], top_k_vectors)[0]
-        # Normalize Word2Vec similarities
         normalized_similarities = self.normalize_scores(similarities)   
 
         # Combine BM25 scores and Word2Vec similarities for final ranking
@@ -102,3 +106,26 @@ class MatchingAndRanking:
         return [(score - min_score) / (max_score - min_score) for score in scores]
 
     
+    def get_query_topic(self, query_tokens, n=5):
+        query_bow = self.dictionary.doc2bow(query_tokens)
+        topic_probs = self.lda_model.get_document_topics(query_bow)
+        top_n = sorted(topic_probs, key=lambda x: x[1], reverse=True)[:n]
+        topics = [t for t, score in top_n if score >= 0.29]
+        if not topics:
+            topics = [t for t, score in top_n[:2]]
+            return topics
+        return topics
+    
+    def loadDictionary(self, dataset_name):
+        dictionary = Dictionary.load(f"{dataset_name}_dictionary.dict")
+        return dictionary
+    
+
+    def loadLdaModel(self, dataset_name):
+        ldaModel = LdaModel.load(f"{dataset_name}_lda_model.gensim")
+        return ldaModel
+    
+    def loadTopicList(self, dataset_name):
+        with open('topics_list.pkl', 'rb') as f:
+            topics_list = pickle.load(f)
+            return topics_list

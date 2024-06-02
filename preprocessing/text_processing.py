@@ -110,7 +110,8 @@ class TextProcessing:
 
 
     def remove_specific_words(self, tokens):
-        words = ['etc']
+        words = ['etc','one','hundred','two','think','get','thousand','people','know','go','three','like','u','believe','good','four','five','word','day','onto','will','cause','say','would','tell','something','believe','little','every','also','really','thing','might','someone','maybe','could','many','may','id','without'
+        'with','nobecause','no','because','question','answer','plugsredyellowwhite','yor','coz','cuz','ever','let','nothing','anything','come','thing','lot','lol','everyone','bla','ha']
         filtered_tokens = [token for token in tokens if token not in words]
         return filtered_tokens
 
@@ -141,13 +142,29 @@ class TextProcessing:
         return ' '.join(processed_words)
 
 
+    def replace_words(self, tokens):
+        substitution_dict = {
+        'mom': 'mother',
+        'dad': 'father',
+        'kid': 'child',
+        'bday': 'birthday',
+        'ur': 'your',
+        'pls': 'please',
+        'thx': 'thanks',
+        'bro': 'brother',
+        'sis': 'sister',
+        'women': 'woman',
+        'men': 'man',
+        }
+        return [substitution_dict.get(token, token) for token in tokens]
+    
     def preprocess_text(self, text):
         text = text.lower()
         
         text = self.remove_punctuations(text)
         text = self.normalize_text(text)
         text = self.expand_contractions(text)
-        text = self.replace_numbers_with_words(text)
+        # text = self.replace_numbers_with_words(text)
         
         #tokenizing
         tokens = word_tokenize(text)
@@ -159,7 +176,7 @@ class TextProcessing:
         tokens = self.remove_specific_words(tokens)
         tokens = self.remove_urls(tokens)
         tokens = self.remove_html_tags(tokens)
-
+        tokens = self.replace_words(tokens)
         # stemming
         # tokens = self.stem_text(tokens)
         

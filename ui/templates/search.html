@@ -7,7 +7,7 @@
   <title>Search</title>
   {% tailwind_css %}
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-800 font-sans">
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-center">
       <img src="/media/search_logo.png" alt="logo" style="width: 500px; height: 200px;" class="mb-4">
@@ -29,23 +29,25 @@
             </svg>
           </button>
         </div>
-        
       </div>
     </form>
     {% if search_results %}
     <!-- {{ search_results }} -->
     <div class="mt-8">
-      <h2 class="text-2xl font-bold mb-4">Search Results</h2>
+      <h2 class="text-2xl font-bold mb-4 text-white">Search Results</h2>
       <div class="space-y-4">
         {% for document in search_results %}
-          <div class="bg-white shadow-md rounded-lg overflow-hidden">
+          <div class="bg-zinc-900 shadow-md rounded-lg overflow-hidden text-white">
             <div class="p-4">
               {{ document.text }}
+              <p></p>
             </div>
           </div>
         {% endfor %}
       </div>
     </div>
+    
+    
     {% elif error %}
       <p class="text-red-500 font-bold">{{ error }}</p>
     {% endif %}
