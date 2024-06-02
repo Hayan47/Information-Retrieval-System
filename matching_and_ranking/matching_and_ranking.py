@@ -26,7 +26,7 @@ class MatchingAndRanking:
     def get_bm25_scores(self, query_terms):
         return self.bm25.get_scores(query_terms)
 
-    def match_and_rank_documents(self, query_terms, k=10):
+    def match_and_rank_documents(self, query_terms, k=100):
         
         query_vector = self.get_query_vector(query_terms)
         
@@ -50,7 +50,6 @@ class MatchingAndRanking:
         normalized_bm25_scores = self.normalize_scores(bm25_scores)
 
         # Get the top-k documents based on BM25 scores
-        k = 100
         top_k_indices = np.argsort(normalized_bm25_scores)[::-1][:k]
         top_k_docs = [(self.doc_vectors[i][0], normalized_bm25_scores[i]) for i in top_k_indices]
 

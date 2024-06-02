@@ -25,16 +25,7 @@ def process_data(request):
             represent_endpoint = 'http://localhost:8000/api/v1/representation/represent/'
             represent_response = requests.post(represent_endpoint, json={'preprocessed_data': preprocessed_data, 'dataset_name': dataset_name})
             if represent_response.status_code == 200: 
-                return Response({'success': True})  
-                # print("Indexing")
-                # index_endpoint = 'http://localhost:8000/api/v1/indexing/indexing/'
-                # indexing_response = requests.post(index_endpoint, json={'dataset_name': dataset_name})
-                # if indexing_response.status_code == 200:
-                #     inverted_index = indexing_response.json()['inverted_index']
-                #     save_inverted_index_chunked(inverted_index, 50,  f'{dataset_name}_inverted_index')
-                #     return Response({'success': True, 'index': inverted_index})
-                # else:
-                #     return Response({'error': 'Error occurred indexing'}, status=represent_response.status_code)
+                return Response({'success': True})
             else:
                 return Response({'error': 'Error occurred during data representation'}, status=represent_response.status_code)
         else:
@@ -48,11 +39,6 @@ def search(request):
     query = request.data.get('query')
     dataset_name = request.data.get('dataset_name')
     if query:
-        # try:
-        #     print("Reading Index")
-        #     inverted_index = load_inverted_index_chunked(f'{dataset_name}_inverted_index')
-        # except inverted_index.DoesNotExist:
-        #     return Response({'error': 'Inverted index not found'}, status=404)
         print("Processing Query")
         query_processing_endpoint = f'http://localhost:8000/api/v1/queryprocessing/queryprocessing/'
         query_processing_response = requests.post(query_processing_endpoint, json={'query': query})
@@ -79,13 +65,8 @@ def evaluate_system(request):
         queries_df = pd.read_csv(queries_path, names=['query_id', 'query_text'])
         queries = [tuple(x) for x in queries_df.values]
         matched_documents = {}
-        # try:
-        #     print("Reading Index")
-        #     inverted_index = load_inverted_index_chunked(f'{dataset_name}_inverted_index')
-        # except inverted_index.DoesNotExist:
-        #     return Response({'error': 'Inverted index not found'}, status=404)
         query_processing_endpoint = f'http://localhost:8000/api/v1/queryprocessing/queryprocessing/'
-        for query_id, query_text in queries[2:3]:
+        for query_id, query_text in queries[:100]:
             query_processing_response = requests.post(query_processing_endpoint, json={'query': query_text})
             if query_processing_response.status_code == 200:
                 print(f"Query '{query_text}' (ID: {query_id}) processed successfully.")

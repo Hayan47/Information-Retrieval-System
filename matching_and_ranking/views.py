@@ -12,11 +12,11 @@ def matchingAndRanking(request):
     dataset_name = request.data.get('dataset_name')
     matching_and_ranking = MatchingAndRanking(dataset_name=dataset_name)
     docs_list = matching_and_ranking.match_and_rank_documents(query_terms)
-    print(docs_list)
+    # print(docs_list)
     documents = []
     for doc_id, score in docs_list:
         try:
-            document = Document.objects.get(doc_id=doc_id)
+            document = Document.objects.get(doc_id=doc_id, dataset_name=dataset_name)
             documents.append(document)
         except Document.DoesNotExist:
             pass

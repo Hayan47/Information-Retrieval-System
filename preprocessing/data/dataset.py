@@ -8,12 +8,12 @@ def load_dataset(dataset_name):
     df = pd.read_csv(dataset_path, sep='\t', header=None, names=['doc_id', 'text'])
     df['text'] = df['text'].fillna('')
     # df = df.head()
-    # store_dataset(df)
+    store_dataset(df, dataset_name)
     return df
 
-def store_dataset(df):
+def store_dataset(df, dataset_name):
     for _, row in df.iterrows():
         doc_id = row['doc_id']
         text = row['text']
-        Document.objects.create(doc_id=doc_id ,text=text)
+        Document.objects.create(doc_id=doc_id ,text=text, dataset_name=dataset_name)
 
