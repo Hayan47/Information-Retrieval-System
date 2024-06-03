@@ -16,5 +16,5 @@ class Clustring:
         return dominant_topics
     
     def saveTopicsList(self, dataset_name, topics_list):
-        with open('topics_list.pkl', 'wb') as f:
+        with open(f'{dataset_name}_topics_list.pkl', 'wb') as f:
             pickle.dump(topics_list, f)

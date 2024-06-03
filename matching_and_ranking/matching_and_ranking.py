@@ -126,6 +126,6 @@ class MatchingAndRanking:
         return ldaModel
     
     def loadTopicList(self, dataset_name):
-        with open('topics_list.pkl', 'rb') as f:
+        with open(f'{dataset_name}_topics_list.pkl', 'rb') as f:
             topics_list = pickle.load(f)
             return topics_list
